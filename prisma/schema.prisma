@@ -8,9 +8,14 @@ generator client {
 // Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+//datasource db {
+//  provider = "sqlite"
+//  url      = "file:dev.sqlite"
+//}
+
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "postgresql" // Assicurati che non sia "sqlite"
+  url      = "postgresql://neondb_owner:npg_rKNZb8IPtM0H@ep-holy-dust-ag2j2kqt-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
 model Session {
