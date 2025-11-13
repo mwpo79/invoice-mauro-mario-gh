@@ -54,19 +54,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     callbackUrl: edge.node.endpoint?.callbackUrl || 'N/A',
   })) || [];
 
+  // Check if ORDERS_CREATE webhook exists
+  const hasOrdersCreateWebhook = webhooks.some((w: WebhookSubscription) => w.topic === 'ORDERS_CREATE');
+
   return {
     appUrl: process.env.SHOPIFY_APP_URL || 'Not configured',
     environment: process.env.NODE_ENV || 'development',
     webhooks,
+    isOrdersCreateMissing: !hasOrdersCreateWebhook,
   };
 };
 
 export default function Settings() {
-  const { appUrl, environment, webhooks } = useLoaderData<typeof loader>();
+  const { appUrl, environment, webhooks, isOrdersCreateMissing } = useLoaderData<typeof loader>();
   const [copied, setCopied] = useState(false);
   const [updatingWebhook, setUpdatingWebhook] = useState<string | null>(null);
   const syncFetcher = useFetcher();
   const webhookFetcher = useFetcher();
+  const createWebhookFetcher = useFetcher();
   const shopify = useAppBridge();
 
   const handleCopyUrl = () => {
@@ -91,6 +96,17 @@ export default function Settings() {
     );
   };
 
+  const handleCreateWebhook = (topic: string) => {
+    createWebhookFetcher.submit(
+      JSON.stringify({ topic }),
+      {
+        method: "POST",
+        action: "/api/create-webhook",
+        encType: "application/json",
+      }
+    );
+  };
+
   useEffect(() => {
     if (syncFetcher.data?.success) {
       shopify.toast.show("App URL synced successfully");
@@ -110,6 +126,16 @@ export default function Settings() {
       setUpdatingWebhook(null);
     }
   }, [webhookFetcher.data]);
+
+  useEffect(() => {
+    if (createWebhookFetcher.data?.success) {
+      shopify.toast.show("Webhook created successfully");
+      // Reload the page to refresh webhook list
+      window.location.reload();
+    } else if (createWebhookFetcher.data?.error) {
+      shopify.toast.show("Failed to create webhook", { isError: true });
+    }
+  }, [createWebhookFetcher.data]);
 
   const isDevelopment = environment === 'development';
   const isSyncing = syncFetcher.state === "submitting" || syncFetcher.state === "loading";
@@ -192,6 +218,28 @@ export default function Settings() {
                     <Badge tone="success">{webhooks.length} Active</Badge>
                   </InlineStack>
                 </InlineStack>
+
+                {isOrdersCreateMissing && (
+                  <Banner tone="critical">
+                    <BlockStack gap="300">
+                      <Text as="p" fontWeight="semibold">
+                        ORDERS_CREATE webhook not found
+                      </Text>
+                      <Text as="p" variant="bodySm">
+                        This webhook is required to process invoice data when orders are created.
+                        Without it, the app cannot automatically attach invoice information to orders.
+                      </Text>
+                      <Button
+                        onClick={() => handleCreateWebhook('ORDERS_CREATE')}
+                        loading={createWebhookFetcher.state === "submitting" || createWebhookFetcher.state === "loading"}
+                        size="slim"
+                        variant="primary"
+                      >
+                        Create ORDERS_CREATE Webhook
+                      </Button>
+                    </BlockStack>
+                  </Banner>
+                )}
 
                 {webhooks.some((w: WebhookSubscription) => w.callbackUrl && !w.callbackUrl.includes(appUrl)) && (
                   <Banner tone="warning">

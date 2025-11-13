@@ -1,5 +1,5 @@
 {
-  "name": "invoice-mauro-mario",
+  "name": "invoice-mauro-mario-gh",
   "private": true,
   "scripts": {
     "build": "remix vite:build",
