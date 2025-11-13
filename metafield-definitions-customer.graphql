@@ -1,0 +1,202 @@
+# GraphQL Mutations to Create Customer Metafield Definitions for Invoice Management
+#
+# Usage: Run these mutations one by one in the Shopify GraphQL Admin API
+# or use a script to execute them programmatically.
+#
+# These metafields extend the customer invoice data to support:
+# - Distinction between Individual (Persona Fisica) and Company (Società)
+# - Legal headquarters address for companies
+#
+# Namespace: "invoice"
+# Owner Type: CUSTOMER
+
+# ============================================================================
+# 1. CUSTOMER TYPE - Determines if customer is Individual or Company
+# ============================================================================
+mutation CreateCustomerTypeMetafield {
+  metafieldDefinitionCreate(
+    definition: {
+      name: "Customer Type"
+      namespace: "invoice"
+      key: "customer_type"
+      description: "Tipo di cliente: 'individual' per Persona Fisica, 'company' per Società"
+      type: "single_line_text_field"
+      ownerType: CUSTOMER
+      validations: [
+        {
+          name: "choices"
+          value: "[\"individual\", \"company\"]"
+        }
+      ]
+    }
+  ) {
+    createdDefinition {
+      id
+      name
+      namespace
+      key
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+
+# ============================================================================
+# 2. SEDE LEGALE - VIA (Legal Headquarters Street Address)
+# ============================================================================
+mutation CreateSedeLegaleViaMetafield {
+  metafieldDefinitionCreate(
+    definition: {
+      name: "Sede Legale - Via"
+      namespace: "invoice"
+      key: "sede_legale_via"
+      description: "Indirizzo sede legale (via e numero civico) - Solo per Società"
+      type: "single_line_text_field"
+      ownerType: CUSTOMER
+    }
+  ) {
+    createdDefinition {
+      id
+      name
+      namespace
+      key
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+
+# ============================================================================
+# 3. SEDE LEGALE - CAP (Legal Headquarters Postal Code)
+# ============================================================================
+mutation CreateSedeLegaleCAPMetafield {
+  metafieldDefinitionCreate(
+    definition: {
+      name: "Sede Legale - CAP"
+      namespace: "invoice"
+      key: "sede_legale_cap"
+      description: "CAP sede legale (5 cifre) - Solo per Società"
+      type: "single_line_text_field"
+      ownerType: CUSTOMER
+      validations: [
+        {
+          name: "min"
+          value: "5"
+        }
+        {
+          name: "max"
+          value: "5"
+        }
+      ]
+    }
+  ) {
+    createdDefinition {
+      id
+      name
+      namespace
+      key
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+
+# ============================================================================
+# 4. SEDE LEGALE - CITTÀ (Legal Headquarters City)
+# ============================================================================
+mutation CreateSedeLegaleCittaMetafield {
+  metafieldDefinitionCreate(
+    definition: {
+      name: "Sede Legale - Città"
+      namespace: "invoice"
+      key: "sede_legale_citta"
+      description: "Città sede legale - Solo per Società"
+      type: "single_line_text_field"
+      ownerType: CUSTOMER
+    }
+  ) {
+    createdDefinition {
+      id
+      name
+      namespace
+      key
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+
+# ============================================================================
+# 5. SEDE LEGALE - PROVINCIA (Legal Headquarters Province)
+# ============================================================================
+mutation CreateSedeLegaleProvinciaMetafield {
+  metafieldDefinitionCreate(
+    definition: {
+      name: "Sede Legale - Provincia"
+      namespace: "invoice"
+      key: "sede_legale_provincia"
+      description: "Provincia sede legale (sigla 2 lettere, es. MI, RM, NA) - Solo per Società"
+      type: "single_line_text_field"
+      ownerType: CUSTOMER
+      validations: [
+        {
+          name: "min"
+          value: "2"
+        }
+        {
+          name: "max"
+          value: "2"
+        }
+      ]
+    }
+  ) {
+    createdDefinition {
+      id
+      name
+      namespace
+      key
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+
+# ============================================================================
+# NOTES:
+# ============================================================================
+#
+# After running these mutations, you'll have the following metafield structure:
+#
+# EXISTING METAFIELDS (already created):
+# - invoice.ragione_sociale - Company name (for companies only)
+# - invoice.partita_iva - VAT number (for companies only, 11 digits)
+# - invoice.codice_fiscale - Tax code (required for all, 16 chars or 11 for companies)
+# - invoice.pec - Certified email (optional for all)
+# - invoice.codice_sdi - Electronic invoicing code (optional for all, 7 chars)
+# - invoice.request_invoice - Boolean flag
+# - invoice.invoice_data - JSON with all invoice data
+#
+# NEW METAFIELDS (created by this file):
+# - invoice.customer_type - "individual" or "company"
+# - invoice.sede_legale_via - Street address of legal headquarters
+# - invoice.sede_legale_cap - Postal code (5 digits)
+# - invoice.sede_legale_citta - City
+# - invoice.sede_legale_provincia - Province code (2 letters)
+#
+# USAGE IN CODE:
+# These metafields will be used in:
+# 1. POS Extension Modal (extensions/invoice-tail/src/Modal.tsx)
+# 2. Customer Invoice Save API (app/routes/api.customer-invoice-save.ts)
+# 3. Customer Invoice Data API (app/routes/api.customer-invoice-data.ts)
+# 4. Proforma Invoice Generation (app/routes/app.$orderId_.proforma.tsx)
+# 5. Invoice Templates (invoice-proforma-template.liquid)
